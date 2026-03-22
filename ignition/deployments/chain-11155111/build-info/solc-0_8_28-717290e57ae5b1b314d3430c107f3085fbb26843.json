@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-717290e57ae5b1b314d3430c107f3085fbb26843",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/Voting.sol": "project/contracts/Voting.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/Voting.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.19;\n\ncontract Voting {\n\n    // ─── State Variables ───────────────────────────────────\n    address public owner;\n\n    enum ElectionState { PENDING, ACTIVE, CLOSED }\n    ElectionState public state;\n\n    struct Candidate {\n        uint id;\n        string name;\n        uint voteCount;\n    }\n\n    mapping(uint => Candidate) public candidates;\n    mapping(address => bool) public hasVoted;\n    uint public candidateCount;\n\n    // ─── Events ────────────────────────────────────────────\n    event CandidateAdded(uint id, string name);\n    event ElectionStarted();\n    event ElectionEnded();\n    event VoteCast(address voter, uint candidateId);\n\n    // ─── Constructor ───────────────────────────────────────\n    constructor() {\n        owner = msg.sender;\n        state = ElectionState.PENDING;\n    }\n\n    // ─── Modifier ──────────────────────────────────────────\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Not owner\");\n        _;\n    }\n\n    // ─── Functions ─────────────────────────────────────────\n\n    function addCandidate(string memory _name) public onlyOwner {\n        require(state == ElectionState.PENDING, \"Cannot add during election\");\n        candidateCount++;\n        candidates[candidateCount] = Candidate(candidateCount, _name, 0);\n        emit CandidateAdded(candidateCount, _name);\n    }\n\n    function startElection() public onlyOwner {\n        require(state == ElectionState.PENDING, \"Already started\");\n        require(candidateCount > 0, \"No candidates added\");\n        state = ElectionState.ACTIVE;\n        emit ElectionStarted();\n    }\n\n    function castVote(uint _candidateId) public {\n        require(state == ElectionState.ACTIVE, \"Election not active\");\n        require(!hasVoted[msg.sender], \"Already voted\");\n        require(_candidateId > 0 && _candidateId <= candidateCount, \"Invalid candidate\");\n        hasVoted[msg.sender] = true;\n        candidates[_candidateId].voteCount++;\n        emit VoteCast(msg.sender, _candidateId);\n    }\n\n    function endElection() public onlyOwner {\n        require(state == ElectionState.ACTIVE, \"Election not active\");\n        state = ElectionState.CLOSED;\n        emit ElectionEnded();\n    }\n\n    function getCandidate(uint _id) public view returns (string memory, uint) {\n        require(_id > 0 && _id <= candidateCount, \"Invalid candidate\");\n        Candidate memory c = candidates[_id];\n        return (c.name, c.voteCount);\n    }\n\n    function getState() public view returns (string memory) {\n        if (state == ElectionState.PENDING) return \"PENDING\";\n        if (state == ElectionState.ACTIVE) return \"ACTIVE\";\n        return \"CLOSED\";\n    }\n}"
+      }
+    }
+  }
+}
